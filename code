@@ -1,0 +1,248 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+
+#define MAX_ITEMS 50
+#define MAX_NAME 50
+
+// Structure to store item details
+typedef struct {
+    char name[MAX_NAME];
+    float price;
+    int quantity;
+    float total;
+} Item;
+
+// Structure to store bill information
+typedef struct {
+    Item items[MAX_ITEMS];
+    int itemCount;
+    float subtotal;
+    float tax;
+    float discount;
+    float grandTotal;
+    char date[20];
+} Bill;
+
+// Function declarations
+void displayMenu();
+void addItem(Bill *bill);
+void displayBill(Bill *bill);
+void calculateBill(Bill *bill);
+void saveBillToFile(Bill *bill);
+void clearScreen();
+void getCurrentDate(char *date);
+
+int main() {
+    Bill bill;
+    bill.itemCount = 0;
+    bill.subtotal = 0;
+    bill.tax = 0;
+    bill.discount = 0;
+    bill.grandTotal = 0;
+    
+    int choice;
+    
+    printf("\n========================================\n");
+    printf("   WELCOME TO BILL MANAGEMENT SYSTEM\n");
+    printf("========================================\n");
+    
+    while(1) {
+        displayMenu();
+        printf("Enter your choice: ");
+        scanf("%d", &choice);
+        
+        switch(choice) {
+            case 1:
+                addItem(&bill);
+                break;
+            case 2:
+                displayBill(&bill);
+                break;
+            case 3:
+                calculateBill(&bill);
+                break;
+            case 4:
+                saveBillToFile(&bill);
+                break;
+            case 5:
+                printf("\nThank you for using Bill Management System!\n");
+                printf("Goodbye!\n");
+                exit(0);
+            default:
+                printf("\nInvalid choice! Please try again.\n");
+        }
+    }
+    
+    return 0;
+}
+
+void displayMenu() {
+    printf("\n========================================\n");
+    printf("           MAIN MENU\n");
+    printf("========================================\n");
+    printf("1. Add Item to Bill\n");
+    printf("2. Display Current Bill\n");
+    printf("3. Calculate Final Bill\n");
+    printf("4. Save Bill to File\n");
+    printf("5. Exit\n");
+    printf("========================================\n");
+}
+
+void addItem(Bill *bill) {
+    if(bill->itemCount >= MAX_ITEMS) {
+        printf("\nBill is full! Cannot add more items.\n");
+        return;
+    }
+    
+    Item newItem;
+    
+    printf("\n--- Add New Item ---\n");
+    printf("Enter item name: ");
+    scanf(" %[^\n]", newItem.name);
+    
+    printf("Enter price: Rs. ");
+    scanf("%f", &newItem.price);
+    
+    printf("Enter quantity: ");
+    scanf("%d", &newItem.quantity);
+    
+    newItem.total = newItem.price * newItem.quantity;
+    
+    bill->items[bill->itemCount] = newItem;
+    bill->itemCount++;
+    
+    printf("\nItem added successfully!\n");
+}
+
+void displayBill(Bill *bill) {
+    if(bill->itemCount == 0) {
+        printf("\nNo items in the bill yet!\n");
+        return;
+    }
+    
+    printf("\n========================================\n");
+    printf("           CURRENT BILL\n");
+    printf("========================================\n");
+    printf("%-20s %-10s %-10s %-10s\n", "Item Name", "Price", "Quantity", "Total");
+    printf("========================================\n");
+    
+    for(int i = 0; i < bill->itemCount; i++) {
+        printf("%-20s Rs.%-7.2f %-10d Rs.%-7.2f\n", 
+               bill->items[i].name,
+               bill->items[i].price,
+               bill->items[i].quantity,
+               bill->items[i].total);
+    }
+    
+    printf("========================================\n");
+}
+
+void calculateBill(Bill *bill) {
+    if(bill->itemCount == 0) {
+        printf("\nNo items to calculate!\n");
+        return;
+    }
+    
+    // Calculate subtotal
+    bill->subtotal = 0;
+    for(int i = 0; i < bill->itemCount; i++) {
+        bill->subtotal += bill->items[i].total;
+    }
+    
+    // Get discount percentage
+    float discountPercent;
+    printf("\nEnter discount percentage (0-100): ");
+    scanf("%f", &discountPercent);
+    bill->discount = (bill->subtotal * discountPercent) / 100;
+    
+    // Calculate tax (assuming 18% GST)
+    float taxPercent = 18.0;
+    bill->tax = ((bill->subtotal - bill->discount) * taxPercent) / 100;
+    
+    // Calculate grand total
+    bill->grandTotal = bill->subtotal - bill->discount + bill->tax;
+    
+    // Get current date
+    getCurrentDate(bill->date);
+    
+    // Display final bill
+    printf("\n========================================\n");
+    printf("           FINAL BILL\n");
+    printf("========================================\n");
+    printf("Date: %s\n", bill->date);
+    printf("========================================\n");
+    printf("%-20s %-10s %-10s %-10s\n", "Item Name", "Price", "Quantity", "Total");
+    printf("========================================\n");
+    
+    for(int i = 0; i < bill->itemCount; i++) {
+        printf("%-20s Rs.%-7.2f %-10d Rs.%-7.2f\n", 
+               bill->items[i].name,
+               bill->items[i].price,
+               bill->items[i].quantity,
+               bill->items[i].total);
+    }
+    
+    printf("========================================\n");
+    printf("Subtotal:           Rs. %.2f\n", bill->subtotal);
+    printf("Discount (%.0f%%):      Rs. %.2f\n", discountPercent, bill->discount);
+    printf("Tax (GST 18%%):      Rs. %.2f\n", bill->tax);
+    printf("========================================\n");
+    printf("GRAND TOTAL:        Rs. %.2f\n", bill->grandTotal);
+    printf("========================================\n");
+}
+
+void saveBillToFile(Bill *bill) {
+    if(bill->itemCount == 0) {
+        printf("\nNo bill to save!\n");
+        return;
+    }
+    
+    FILE *file;
+    char filename[50];
+    
+    printf("\nEnter filename to save (e.g., bill.txt): ");
+    scanf("%s", filename);
+    
+    file = fopen(filename, "w");
+    
+    if(file == NULL) {
+        printf("\nError opening file!\n");
+        return;
+    }
+    
+    fprintf(file, "========================================\n");
+    fprintf(file, "           FINAL BILL\n");
+    fprintf(file, "========================================\n");
+    fprintf(file, "Date: %s\n", bill->date);
+    fprintf(file, "========================================\n");
+    fprintf(file, "%-20s %-10s %-10s %-10s\n", "Item Name", "Price", "Quantity", "Total");
+    fprintf(file, "========================================\n");
+    
+    for(int i = 0; i < bill->itemCount; i++) {
+        fprintf(file, "%-20s Rs.%-7.2f %-10d Rs.%-7.2f\n", 
+                bill->items[i].name,
+                bill->items[i].price,
+                bill->items[i].quantity,
+                bill->items[i].total);
+    }
+    
+    fprintf(file, "========================================\n");
+    fprintf(file, "Subtotal:           Rs. %.2f\n", bill->subtotal);
+    fprintf(file, "Discount:           Rs. %.2f\n", bill->discount);
+    fprintf(file, "Tax (GST 18%%):      Rs. %.2f\n", bill->tax);
+    fprintf(file, "========================================\n");
+    fprintf(file, "GRAND TOTAL:        Rs. %.2f\n", bill->grandTotal);
+    fprintf(file, "========================================\n");
+    
+    fclose(file);
+    
+    printf("\nBill saved successfully to %s!\n", filename);
+}
+
+void getCurrentDate(char *date) {
+    time_t t = time(NULL);
+    struct tm tm = *localtime(&t);
+    sprintf(date, "%02d/%02d/%d", tm.tm_mday, tm.tm_mon + 1, tm.tm_year + 1900);
+}
